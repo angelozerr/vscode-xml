@@ -99,6 +99,32 @@
             "type": "string"
           },
           "description": "Array of XML Catalogs.",
+          "scope": "window",
+          "deprecationMessage": "Attribute 'xml.catalogs' is deprecated, use 'xml.catalog.files' instead."
+        },
+        "xml.catalog.files": {
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "description": "Array of XML Catalogs.",
+          "scope": "window"
+        },
+        "xml.catalog.prefer": {
+          "type": "string",
+          "enum": [
+            "public",
+            "system"
+          ],
+          "default": "public",
+          "markdownDescription": "Sets the preference for whether system or public matches are preferred. This is used in the absence of any occurrence of the `prefer` attribute on the `catalog` entry of a catalog.",
+          "scope": "window"
+        },
+        "xml.catalog.useLiteralSystemId": {
+          "type": "boolean",
+          "default": true,
+          "description": "Sets the preference for whether the literal system identifier should be used when resolving system identifiers when both it and the expanded system identifier are available.",
           "scope": "window"
         },
         "xml.logs.client": {
