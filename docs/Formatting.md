@@ -281,3 +281,55 @@ If it is set to `true`, the above document becomes:
   ```
 
 ***
+### xml.format.xsiSchemaLocationSplit
+
+  Used to configure how to format the content of `xsi:schemaLocation`.
+
+  To explain the different settings, we will use this xml document as an example:
+  ```xml
+  <ROOT:root
+    xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'
+    xmlns:ROOT='http://example.org/schema/root'
+    xmlns:BISON='http://example.org/schema/bison'
+    xsi:schemaLocation='http://example.org/schema/root root.xsd http://example.org/schema/bison bison.xsd'>
+  <BISON:bison
+      name='Simon'
+      weight='20' />
+  </ROOT:root>
+  ```
+  Note that it references two different external schemas. Additionally, the setting `xml.format.splitAttributes` will be set to true for the formatted examples in order to make the formatted result easier to see.
+
+  * When it is set to `none`, the formatter does not change the content of `xsi:schemaLocation`. The above file would not change after formatting.
+
+  * When it is set to `onPair`, the formatter groups the content into pairs of namespace and URI, and inserts a new line after each pair. Assuming the other formatting settings are left at their default, the above file would look like this:
+    ```xml
+    <ROOT:root
+        xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'
+        xmlns:ROOT='http://example.org/schema/root'
+        xmlns:BISON='http://example.org/schema/bison'
+        xsi:schemaLocation='http://example.org/schema/root root.xsd
+                            http://example.org/schema/bison bison.xsd'>
+      <BISON:bison
+          name='Simon'
+          weight='20' />
+    </ROOT:root>
+    ```
+
+  * When it is set to `onElement`, the formatter inserts a new line after each namespace and each URI.
+    ```xml
+    <ROOT:root
+        xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'
+        xmlns:ROOT='http://example.org/schema/root'
+        xmlns:BISON='http://example.org/schema/bison'
+        xsi:schemaLocation='http://example.org/schema/root
+                            root.xsd
+                            http://example.org/schema/bison
+                            bison.xsd'>
+      <BISON:bison
+          name='Simon'
+          weight='20' />
+    </ROOT:root>
+    ```
+
+***
+
