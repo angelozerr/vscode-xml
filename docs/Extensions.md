@@ -34,3 +34,9 @@ To do that:
 You can see the [vscode-xml-maven](https://github.com/angelozerr/vscode-xml-maven) sample which registers custom maven completion [MavenCompletionParticipant](https://github.com/eclipse/lemminx-maven/blob/master/lemminx-maven/src/main/java/org/eclipse/lemminx/extensions/maven/MavenCompletionParticipant.java#L210) for scope:
 
 ![demo of vscode xml maven suggesting different scopes for a dependency](./images/vscode-xml-maven.gif)
+
+### Commands
+
+`xml.workspace.executeCommand` - command registered on VSCode client (via **vscode-xml** extension) to let other extensions execute commands on XML Language server
+
+`xml/executeClientCommand` - XML Language server LSP extension to let XML LS extenders execute commands on the client. The command is made available via `IXMLCommandService` on the server side. See [XML LS extensions docs](https://github.com/eclipse/lemminx/blob/master/docs/LemMinX-Extensions.md#xml-language-server-services-available-for-extensions)

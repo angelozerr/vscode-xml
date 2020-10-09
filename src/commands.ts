@@ -48,4 +48,9 @@ export namespace Commands {
     export const MARKDOWN_API_RENDER = 'markdown.api.render';
 
     export const OPEN_DOCS = "xml.open.docs";
+
+    /**
+     * VSCode client command to executes an LSP command on the XML Language Server
+     */
+    export const EXECUTE_WORKSPACE_COMMAND = "xml.workspace.executeCommand";
 }
