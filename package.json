@@ -373,6 +373,18 @@
         "files.trimTrailingWhitespace": false
       }
     },
+    "commands": [
+      {
+        "command": "xml.validation.current.file",
+        "title": "Evict cache for referenced grammars of the current XML file and re-validate it",
+        "category": "XML"
+      },
+      {
+        "command": "xml.validation.all.files",
+        "title": "Evict cache for all grammars and re-validate all opened XML files",
+        "category": "XML"
+      }
+    ],
     "languages": [
       {
         "id": "xml",

@@ -11,7 +11,7 @@
  */
 
 import { prepareExecutable } from './javaServerStarter';
-import { LanguageClientOptions, RevealOutputChannelOn, LanguageClient, DidChangeConfigurationNotification, RequestType, TextDocumentPositionParams, ReferencesRequest, NotificationType, MessageType, ExecuteCommandParams, CancellationToken, ExecuteCommandRequest } from 'vscode-languageclient';
+import { LanguageClientOptions, RevealOutputChannelOn, LanguageClient, DidChangeConfigurationNotification, RequestType, TextDocumentPositionParams, ReferencesRequest, NotificationType, MessageType, ExecuteCommandParams, CancellationToken, ExecuteCommandRequest, TextDocumentIdentifier } from 'vscode-languageclient';
 import * as requirements from './requirements';
 import { languages, IndentAction, workspace, window, commands, ExtensionContext, TextDocument, Position, LanguageConfiguration, Uri, extensions, Command } from "vscode";
 import * as path from 'path';
@@ -140,6 +140,7 @@ namespace ActionableNotification {
 let languageClient: LanguageClient;
 
 export function activate(context: ExtensionContext) {
+  // Register commands for documentation
   context.subscriptions.push(markdownPreviewProvider);
   context.subscriptions.push(commands.registerCommand(Commands.OPEN_DOCS, async (params) => {
     const uri = params.page + '.md';
@@ -147,6 +148,7 @@ export function activate(context: ExtensionContext) {
     const title = 'XML ' + params.page;
     markdownPreviewProvider.show(context.asAbsolutePath(path.join('docs', uri)), title, sectionId, context);
   }));
+
   let storagePath = context.storagePath;
   const externalXmlSettings = {
     "xmlCatalogs": [],
@@ -238,27 +240,36 @@ export function activate(context: ExtensionContext) {
       // Handler for 'xml/executeClientCommand` request message that executes a command on the client
       languageClient.onRequest(ExecuteClientCommandRequest.type, async (params: ExecuteCommandParams) => {
         return await commands.executeCommand(params.command, ...params.arguments);
-      });    
+      });
 
       // Register client command to execute custom XML Language Server command
       context.subscriptions.push(commands.registerCommand(Commands.EXECUTE_WORKSPACE_COMMAND, (command, ...rest) => {
-				let token: CancellationToken;
-				let commandArgs: any[] = rest;
-				if (rest && rest.length && CancellationToken.is(rest[rest.length - 1])) {
-					token = rest[rest.length - 1];
-					commandArgs = rest.slice(0, rest.length - 1);
-				}
-				const params: ExecuteCommandParams = {
-					command,
-					arguments: commandArgs
-				};
-				if (token) {
-					return languageClient.sendRequest(ExecuteCommandRequest.type, params, token);
-				} else {
-					return languageClient.sendRequest(ExecuteCommandRequest.type, params);
-				}
+        let token: CancellationToken;
+        let commandArgs: any[] = rest;
+        if (rest && rest.length && CancellationToken.is(rest[rest.length - 1])) {
+          token = rest[rest.length - 1];
+          commandArgs = rest.slice(0, rest.length - 1);
+        }
+        const params: ExecuteCommandParams = {
+          command,
+          arguments: commandArgs
+        };
+        if (token) {
+          return languageClient.sendRequest(ExecuteCommandRequest.type, params, token);
+        } else {
+          return languageClient.sendRequest(ExecuteCommandRequest.type, params);
+        }
       }));
 
+      // Register custom XML commands
+      context.subscriptions.push(commands.registerCommand(Commands.VALIDATE_CURRENT_FILE, async (params) => {
+        const uri = window.activeTextEditor.document.uri;
+        const identifier = TextDocumentIdentifier.create(uri.toString());
+        commands.executeCommand(Commands.EXECUTE_WORKSPACE_COMMAND, Commands.VALIDATE_CURRENT_FILE, identifier);
+      }));
+      context.subscriptions.push(commands.registerCommand(Commands.VALIDATE_ALL_FILES, async () => {
+        commands.executeCommand(Commands.EXECUTE_WORKSPACE_COMMAND, Commands.VALIDATE_ALL_FILES);
+      }));
       context.subscriptions.push(commands.registerCommand(Commands.OPEN_SETTINGS, async (settingId?: string) => {
         commands.executeCommand('workbench.action.openSettings', settingId);
       }));
