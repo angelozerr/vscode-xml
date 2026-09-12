@@ -846,6 +846,11 @@
         "command": "xml.minify",
         "title": "Minify XML Document",
         "category": "XML"
+      },
+      {
+        "command": "xml.generate.fromGrammar",
+        "title": "Generate XML from Grammar",
+        "category": "XML"
       }
     ],
     "menus": {
@@ -881,6 +886,10 @@
         {
           "command": "xml.minify",
           "when": "editorLangId in xml.supportedLanguageIds && XMLLSReady"
+        },
+        {
+          "command": "xml.generate.fromGrammar",
+          "when": "XMLLSReady"
         }
       ],
       "editor/context": [
@@ -898,6 +907,13 @@
           "command": "xml.refactor.surround.with.cdata",
           "when": "editorLangId in xml.supportedLanguageIds && XMLLSReady",
           "group": "1_modification"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "xml.generate.fromGrammar",
+          "when": "resourceExtname == .xsd || resourceExtname == .dtd || resourceExtname == .rng || resourceExtname == .rnc",
+          "group": "xml"
         }
       ]
     },

@@ -34,6 +34,7 @@ export async function registerClientServerCommands(context: ExtensionContext, la
   registerRefactorCommands(context, languageClient);
   registerMinifyCommand(context, languageClient);
   registerAssociationCommands(context, languageClient);
+  registerGenerateXMLCommands(context, languageClient);
   registerRestartLanguageServerCommand(context, languageClient);
   registerConfigurationUpdateCommand();
 
@@ -511,4 +512,126 @@ function registerMinifyCommand(context: ExtensionContext, languageClient: Langua
       window.showErrorMessage('Error during XML minification: ' + error.message);
     }
   }));
+}
+
+interface RootElementInfo {
+  name: string;
+  namespace: string;
+}
+
+/**
+ * Register commands for generating XML from grammar files
+ *
+ * @param context the extension context
+ * @param languageClient the language server client
+ */
+function registerGenerateXMLCommands(context: ExtensionContext, languageClient: LanguageClient) {
+  context.subscriptions.push(commands.registerCommand(ClientCommandConstants.GENERATE_XML_FROM_GRAMMAR, async (grammarFileUri?: Uri) => {
+    await generateXMLFromGrammarCommand(grammarFileUri);
+  }));
+}
+
+/**
+ * Multi-step wizard to generate an XML document from a grammar (XSD, DTD, RelaxNG, RNC).
+ *
+ * When invoked from explorer context menu, the grammar URI is passed directly (skips step 1).
+ * When invoked from command palette, step 1 asks user to select a grammar file.
+ *
+ * @param grammarFileUri optional grammar file URI (from context menu)
+ */
+async function generateXMLFromGrammarCommand(grammarFileUri: Uri | undefined) {
+  let grammarURI: string;
+
+  if (grammarFileUri) {
+    // Invoked from context menu on a grammar file — skip step 1
+    grammarURI = grammarFileUri.toString();
+  } else {
+    // Invoked from command palette — step 1: select grammar file
+    const grammarType = await window.showQuickPick(
+      [{ label: "local" }, { label: "remote" }],
+      { placeHolder: "Select grammar source" }
+    );
+    if (!grammarType) return;
+
+    if (grammarType.label === 'remote') {
+      let predefinedUrl = await env.clipboard.readText();
+      if (!predefinedUrl || !predefinedUrl.startsWith('http')) {
+        predefinedUrl = '';
+      }
+      const inputUrl = await window.showInputBox({
+        title: 'Enter grammar URL (XSD, DTD, RNG, RNC)',
+        value: predefinedUrl
+      });
+      if (!inputUrl) return;
+      grammarURI = inputUrl;
+    } else {
+      const options: OpenDialogOptions = {
+        canSelectMany: false,
+        openLabel: 'Select grammar file',
+        filters: {
+          'Grammar files': ['xsd', 'dtd', 'rng', 'rnc']
+        }
+      };
+      const fileUri = await window.showOpenDialog(options);
+      if (!fileUri || !fileUri[0]) return;
+      grammarURI = fileUri[0].toString();
+    }
+  }
+
+  if (!grammarURI) return;
+
+  // Step 2: List root elements from the grammar
+  let rootElements: RootElementInfo[];
+  try {
+    rootElements = await commands.executeCommand(
+      ClientCommandConstants.EXECUTE_WORKSPACE_COMMAND,
+      ServerCommandConstants.LIST_ROOT_ELEMENTS,
+      grammarURI
+    );
+  } catch (error) {
+    window.showErrorMessage('Error listing root elements: ' + error.message);
+    return;
+  }
+
+  if (!rootElements || rootElements.length === 0) {
+    window.showWarningMessage('No root elements found in the selected grammar.');
+    return;
+  }
+
+  // If only one root element, skip the selection step
+  let selectedRootElement: string;
+  if (rootElements.length === 1) {
+    selectedRootElement = rootElements[0].name;
+  } else {
+    const items: QuickPickItem[] = rootElements.map(e => ({
+      label: e.name,
+      description: e.namespace || ''
+    }));
+    const picked = await window.showQuickPick(items, { placeHolder: 'Select root element' });
+    if (!picked) return;
+    selectedRootElement = picked.label;
+  }
+
+  // Step 3: Generate XML content
+  let xmlContent: string;
+  try {
+    xmlContent = await commands.executeCommand(
+      ClientCommandConstants.EXECUTE_WORKSPACE_COMMAND,
+      ServerCommandConstants.GENERATE_XML,
+      grammarURI,
+      selectedRootElement
+    );
+  } catch (error) {
+    window.showErrorMessage('Error generating XML: ' + error.message);
+    return;
+  }
+
+  if (!xmlContent) {
+    window.showWarningMessage('Failed to generate XML content.');
+    return;
+  }
+
+  // Open the generated XML in a new untitled document
+  const doc = await workspace.openTextDocument({ content: xmlContent, language: 'xml' });
+  await window.showTextDocument(doc);
 }
